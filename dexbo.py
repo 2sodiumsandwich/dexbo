@@ -1,4 +1,4 @@
 #!/usr/bin/python3
-from scraper import pokescraper, getlink
+from scraper import getlink
 
 print(getlink(input("Search query: ")))

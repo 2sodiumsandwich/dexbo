@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 import requests
 import httplib2
 from bs4 import BeautifulSoup
@@ -69,7 +68,7 @@ def pokescraper(url):
 
     data["id"] = (soup.title.string).split(" ")[2] #id
     data["name"] = (soup.title.string).split(" ")[0] #name
-    data["thumb"] = "http://play.pokemonshowdown.com/sprites/xyani/" + data["name"].lower() + ".gif" #thumb
+    data["thumb"] = 'http://play.pokemonshowdown.com/sprites/xyani/' + data["name"].lower() + '.gif' #thumb
 
     try:
         datajson = s.get("https://pokeapi.co/api/v2/pokemon/" + data["name"].lower(), headers=header_Get).json() #get json from pokeapi.co

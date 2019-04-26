@@ -1,4 +1,5 @@
 #!/usr/bin/python3
-from scraper import getlink
+from scraper import getpokelink, pokescraper
 
-print(getlink(input("Search query: ")))
+t = getpokelink(input("Search query: "))
+if(t): print(pokescraper(t))

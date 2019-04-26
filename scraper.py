@@ -2,6 +2,7 @@
 import requests
 import httplib2
 from bs4 import BeautifulSoup
+import json
 
 #set HTTP header
 header_Get = {
@@ -14,9 +15,9 @@ header_Get = {
         'Upgrade-Insecure-Requests': '1'
     }
 
-def getlink(query):
+def getpokelink(query):
     s = requests.Session() #start session
-    url = "https://www.google.com/search?&q=" + query.replace(" ", "+") + "+pokemon" + "+site:serebii.net" + "&ie=utf-8&oe=utf-8" #google search url
+    url = "https://www.google.com/search?&q=" + query.replace(" ", "+") + "+pokedex" + "+site:serebii.net" + "&ie=utf-8&oe=utf-8" #google search url
     search = s.get(url, headers=header_Get)
     
     soup = BeautifulSoup(search.text, "html.parser") #parsing html
@@ -24,7 +25,7 @@ def getlink(query):
     for searchWrapper in soup.find_all('a'):
         url = searchWrapper.get('href')
         keyterms = ["pokedex", "serebii"]
-        badkeyterms = ["google", "3dpro"]
+        badkeyterms = ["google", "3dpro", "search"]
         if(url is not None and all(x in url for x in keyterms) and not any(y in url for y in badkeyterms)): #looking for links
             output.append(url)
             
@@ -38,11 +39,65 @@ def getlink(query):
                 print("No results")
                 return False
             else:
-                link = output[i].split("pokedex-")[0] + "pokedex-sm" + output[i].split("pokedex-")[1][2:] #change pokedex to sm
+                link = "https://www.serebii.net/pokedex-sm/" + output[i].split("/")[-1] #change pokedex region to sm
                 if(int(httplib2.Http().request(link, "HEAD")[0]['status']) < 400): #testing if link works
                     return link
                 else:
                     i += 1
 
-def pokescraper():
-    return 0
+def pokescraper(url):
+    s = requests.Session()
+    page = s.get(url, headers=header_Get)
+
+    soup = BeautifulSoup(page.text, "html.parser")
+    data = {
+        "id": None,
+        "name": None,
+        "stats": {
+            "hp": None,
+            "atk": None,
+            "def": None,
+            "spatk": None,
+            "spdef": None,
+            "spd": None
+        },
+        "abilities": None,
+        "hidden": None,
+        "type": None,
+        "thumb": None
+    }
+
+    data["id"] = (soup.title.string).split(" ")[2] #id
+    data["name"] = (soup.title.string).split(" ")[0] #name
+    data["thumb"] = "http://play.pokemonshowdown.com/sprites/xyani/" + data["name"].lower() + ".gif" #thumb
+
+    datajson = s.get("https://pokeapi.co/api/v2/pokemon/" + data["name"].lower(), headers=header_Get).json() #get json from pokeapi.co
+
+
+    #abilities
+    abils = []
+    habils = []
+    for x in range(0, len(datajson["abilities"])):
+        if(datajson["abilities"][x]["is_hidden"]):
+            habils.append(datajson["abilities"][x]["ability"]["name"])
+        else:
+            abils.append(datajson["abilities"][x]["ability"]["name"])
+    data["abilities"] = abils
+    data["hidden"] = habils
+
+
+    #stats
+    data["stats"]["spd"] = datajson["stats"][0]["base_stat"]
+    data["stats"]["spdef"] = datajson["stats"][1]["base_stat"]
+    data["stats"]["spatk"] = datajson["stats"][2]["base_stat"]
+    data["stats"]["def"] = datajson["stats"][3]["base_stat"]
+    data["stats"]["atk"] = datajson["stats"][4]["base_stat"]
+    data["stats"]["hp"] = datajson["stats"][5]["base_stat"]
+
+    #types
+    types = []
+    for x in range(0, len(datajson["types"])):
+        types.append(datajson["types"][x]["type"]["name"])
+    data["type"] = types
+
+    return json.dumps(data)

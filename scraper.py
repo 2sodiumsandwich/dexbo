@@ -71,8 +71,11 @@ def pokescraper(url):
     data["name"] = (soup.title.string).split(" ")[0] #name
     data["thumb"] = "http://play.pokemonshowdown.com/sprites/xyani/" + data["name"].lower() + ".gif" #thumb
 
-    datajson = s.get("https://pokeapi.co/api/v2/pokemon/" + data["name"].lower(), headers=header_Get).json() #get json from pokeapi.co
-
+    try:
+        datajson = s.get("https://pokeapi.co/api/v2/pokemon/" + data["name"].lower(), headers=header_Get).json() #get json from pokeapi.co
+    except:
+        print("Cannot find data for pokemon " + data["name"])
+        return False
 
     #abilities
     abils = []

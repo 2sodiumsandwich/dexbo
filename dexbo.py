@@ -1,9 +1,9 @@
-from scraper import getpokelink, pokescraper
+from scraper import getlink, pokescraper
 import json
 import discord
 from discord.ext import commands
 
-with open("./auth.json", "r") as read_file:
+with open("auth.json", "r") as read_file:
 	data = json.load(read_file)
 TOKEN = data.get("token")
 prefix = data.get("prefix")
@@ -26,7 +26,7 @@ async def on_message(message):
         cmd = msg[0]
         if(cmd == "id"):
             query = "".join(msg[1:])
-            t = getpokelink(query)
+            t = getlink(query, ["pokedex", "site:serebii.net"], ["pokedex", "serebii"], ["google", "3dpro", "search"])
             if(t): 
                 data = pokescraper(t)
                 if(data):
@@ -37,9 +37,13 @@ async def on_message(message):
                     embed.set_footer(text="Made by Nikomix")
 
                     await message.channel.send(embed=embed)
+                else:
+                    await message.channel.send("Data for this pokemon cannot be retrieved")
+            else:
+                await message.channel.send("No results found")
         if(cmd == "scan"):
             query = "".join(msg[1:])
-            t = getpokelink(query)
+            t = getlink(query, ["pokedex", "site:serebii.net"], ["pokedex", "serebii"], ["google", "3dpro", "search"])
             if(t): 
                 data = pokescraper(t)
                 if(data):

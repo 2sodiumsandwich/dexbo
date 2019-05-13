@@ -14,17 +14,17 @@ header_Get = {
         'Upgrade-Insecure-Requests': '1'
     }
 
-def getpokelink(query):
+def getlink(query, queryterms, keyterms, badkeyterms):
     s = requests.Session() #start session
-    url = "https://www.google.com/search?&q=" + query.replace(" ", "+") + "+pokedex" + "+site:serebii.net" + "&ie=utf-8&oe=utf-8" #google search url
-    search = s.get(url, headers=header_Get)
-    
-    soup = BeautifulSoup(search.text, "html.parser") #parsing html
+    url = "https://www.google.com/search?&q="  + query.replace(" ", "%20")
+    for x in queryterms: url += "+" + x  
+    url += "&ie=utf-8&oe=utf-8"     
+    search = s.get(url, headers=header_Get) #parsing html
+
+    soup = BeautifulSoup(search.text, "html.parser")
     output = []
     for searchWrapper in soup.find_all('a'):
         url = searchWrapper.get('href')
-        keyterms = ["pokedex", "serebii"]
-        badkeyterms = ["google", "3dpro", "search"]
         if(url is not None and all(x in url for x in keyterms) and not any(y in url for y in badkeyterms)): #looking for links
             output.append(url)
             
@@ -38,13 +38,13 @@ def getpokelink(query):
                 print("No results")
                 return False
             else:
-                link = "https://www.serebii.net/pokedex-sm/" + output[i].split("/")[-1] #change pokedex region to sm
-                if(int(httplib2.Http().request(link, "HEAD")[0]['status']) < 400): #testing if link works
-                    return link
+                if(int(httplib2.Http().request(output[i], "HEAD")[0]['status']) < 400): #testing if link works
+                    return output[i]
                 else:
                     i += 1
 
 def pokescraper(url):
+    url = "https://www.serebii.net/pokedex-sm/" + url.split("/")[-1]
     s = requests.Session()
     page = s.get(url, headers=header_Get)
 
@@ -69,11 +69,10 @@ def pokescraper(url):
     data["id"] = (soup.title.string).split(" ")[2] #id
     data["name"] = (soup.title.string).split(" ")[0] #name
     data["thumb"] = 'http://play.pokemonshowdown.com/sprites/xyani/' + data["name"].lower() + '.gif' #thumb
-
+    print(data["id"].lower().lstrip("0").lstrip("#"))
     try:
-        datajson = s.get("https://pokeapi.co/api/v2/pokemon/" + data["name"].lower(), headers=header_Get).json() #get json from pokeapi.co
+        datajson = s.get("https://pokeapi.co/api/v2/pokemon/" + data["id"].lower().lstrip("#").lstrip("0"), headers=header_Get).json() #get json from pokeapi.co
     except:
-        print("Cannot find data for pokemon " + data["name"])
         return False
 
     #abilities

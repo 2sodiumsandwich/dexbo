@@ -1,4 +1,4 @@
-from scraper import getlink, pokescraper
+from scraper import getlink, pokescraper, getLegos
 import json
 import discord
 from discord.ext import commands
@@ -24,6 +24,14 @@ async def on_message(message):
     if message.content.startswith(prefix):
         msg = message.content[len(prefix):].split(' ')
         cmd = msg[0]
+        
+        if(cmd == "help"):
+            embed = discord.Embed(color=0xFF0000)
+            msg = "`=dexid [pokemon]` identifies a pokemon\n=`dexscan [pokemon]` indepth identification of a pokemon\n`=dexbrick` lookup lego set"
+            embed.add_field(name="Commands", value=msg, inline=True)
+            embed.set_footer(text="Made by Nikomix")
+            await message.channel.send(embed=embed)
+
         if(cmd == "id"):
             query = "".join(msg[1:])
             t = getlink(query, ["pokedex", "site:serebii.net"], ["pokedex", "serebii"], ["google", "3dpro", "search"])
@@ -41,6 +49,7 @@ async def on_message(message):
                     await message.channel.send("Data for this pokemon cannot be retrieved")
             else:
                 await message.channel.send("No results found")
+
         if(cmd == "scan"):
             query = "".join(msg[1:])
             t = getlink(query, ["pokedex", "site:serebii.net"], ["pokedex", "serebii"], ["google", "3dpro", "search"])
@@ -68,6 +77,24 @@ async def on_message(message):
             else:
                 await message.channel.send("No results found")
 
+        if(cmd == "brick"):
+            query = "".join(msg[1:])
+            t = getlink(query, ["set", "site:brickset.com"], ["sets"], ["google", "theme", "query"])
+            if(t): 
+                data = getLegos(t)
+                if(data):
+                    data = json.loads(data)
+                    embed=discord.Embed(title=data["name"] + " (" + data["year"] + ") - " + data["id"], url=data["brickUrl"], color=0xFF0000)
+                    #await message.channel.send(data["name"] + " (" + data["year"] + ") - " + data["id"])
+                    embed.set_image(url=data["thumb"])
+                    embed.add_field(name="Pieces", value=data["pieces"], inline=False)
+                    embed.add_field(name="Price", value=data["priceUS"] + " USD", inline=False)
+                    embed.set_footer(text="Made by Nikomix")                    
+                    await message.channel.send(embed=embed)
+                else:
+                    await message.channel.send("Data for this set cannot be retrieved")
+            else:
+                await message.channel.send("No results found")
 
 if __name__ == '__main__':
     bot.run(TOKEN)

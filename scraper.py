@@ -2,6 +2,10 @@ import requests
 import httplib2
 from bs4 import BeautifulSoup
 import json
+from json import dumps
+from xmljson import badgerfish as bf
+import xmltodict
+from xml.etree.ElementTree import fromstring
 
 #set HTTP header
 header_Get = {
@@ -101,4 +105,40 @@ def pokescraper(url):
         types.append(datajson["types"][x]["type"]["name"])
     data["type"] = types
 
+    return json.dumps(data)
+
+def getLegos(url):
+    s = requests.Session()
+    page = s.get(url, headers=header_Get)
+
+    soup = BeautifulSoup(page.text, "html.parser")
+    data = {
+        "id": None,
+        "year": None,
+        "name": None,
+        "pieces": None,
+        "thumb": None,
+        "priceUS": None,
+        "brickUrl": None
+    }
+
+    data["id"] = (soup.title.string).split(" ")[0][:-1] #id of set 
+
+    with open("auth.json", "r") as read_file:
+        credentials = json.load(read_file)
+    API_ENDPOINT = "https://brickset.com/api/v2.asmx/login?apiKey=" + credentials["bsapikey"] + "&username=" + credentials["bsuser"]+ "&password=" + credentials["bspw"]
+    r = requests.get(url = API_ENDPOINT)
+    USERHASH = bf.data(fromstring(r.content))[list(bf.data(fromstring(r.content)))[0]]["$"] #requesting userhash from api/login
+    
+    API_ENDPOINT = "https://brickset.com/api/v2.asmx/getSets?apiKey=" + credentials["bsapikey"] + "&userHash=\"" + USERHASH + "\"&query=" + data["id"] + "&theme=&subtheme=&setnumber=&year=&owned=&wanted=&orderby=&pagesize=&pagenumber=&username="
+
+    r = requests.get(url = API_ENDPOINT)
+    SETDATA = dict(dict(xmltodict.parse(r.content)["ArrayOfSets"])['sets'])
+    data["year"] = SETDATA["year"]
+    data["name"] = SETDATA["name"]
+    data["pieces"] = SETDATA["pieces"]
+    data["thumb"] = SETDATA["thumbnailURL"].replace("small","large")
+    data["priceUS"] = SETDATA["USRetailPrice"]
+    data["brickUrl"] = SETDATA["bricksetURL"]
+    
     return json.dumps(data)
